@@ -1,477 +1,1104 @@
 /* =====================================================
-   V7 BARBEARIA — CONFIGURAÇÃO (edite só esta parte)
-   ===================================================== */
+   V7 BARBEARIA — CONFIGURAÇÕES (edite só esta parte)
+===================================================== */
 
 const CONFIG = {
     whatsapp: "5551999999999",          // DDI + DDD + número, só dígitos
+
     abre: "09:00",
     fecha: "20:00",
     passoMin: 30,                        // intervalo entre horários
+
     diasAbertos: [1, 2, 3, 4, 5, 6],     // 0 = domingo ... 6 = sábado
-    diasMostrados: 14,                   // quantos dias abertos aparecem na escolha (a partir de hoje)
-    // Para usar foto: foto: "img/carlos.jpg" (sem foto, aparece a inicial do nome)
+    diasMostrados: 14,                   // quantos dias abertos aparecem (a partir de hoje)
+
+    // foto: "img/carlos.jpg" (sem foto, aparece a inicial do nome)
     barbeiros: [
-        { nome: "Carlos", foto: "", instagram: "carlos.v7" },   // instagram é opcional (sem o @)
+        { nome: "Carlos", foto: "", instagram: "carlos.v7" },
         { nome: "Rafael", foto: "", instagram: "rafael.v7" },
-        { nome: "Diego",  foto: "", instagram: "" }
+        { nome: "Diego", foto: "", instagram: "diego.v7" }
     ],
-    local: "V7 Barbearia",               // nome que aparece no evento do calendário
-    endereco: "Rua Exemplo, 123 - Bairro, Cidade - UF",   // aparece no site, no calendário e no Maps
+
+    local: "V7 Barbearia",
+    endereco: "Rua Exemplo, 123 - Bairro, Cidade - UF",
     instagram: "v7barbearia",            // sem o @
+
     pinPainel: "1234"                    // senha da Área do barbeiro
 };
 
+
+/* =====================================================
+   SERVIÇOS
+===================================================== */
+
 const SERVICOS = [
-    { id: "corte",      nome: "Corte masculino", de: 39.90, preco: 25.90, duracao: 30 },
-    { id: "barba",      nome: "Barba",           de: 29.90, preco: 19.90, duracao: 25 },
-    { id: "combo",      nome: "Corte + barba",   de: 49.90, preco: 32.90, duracao: 60, destaque: true },
-    { id: "acabamento", nome: "Acabamento",      de: 19.90, preco: 15.00, duracao: 10 }
+    { id: "corte", nome: "Corte masculino", de: 39.90, preco: 25.90, duracao: 30 },
+    { id: "barba", nome: "Barba", de: 29.90, preco: 19.90, duracao: 25 },
+    { id: "combo", nome: "Corte + barba", de: 49.90, preco: 32.90, duracao: 60, destaque: true },
+    { id: "acabamento", nome: "Acabamento", de: 19.90, preco: 15.00, duracao: 10 }
 ];
 
-/* =====================================================
-   AUXILIARES
-   ===================================================== */
-
-const $ = (sel) => document.querySelector(sel);
-const brl = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const paraMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
-const paraHHMM = (min) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
-const isoData = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-const dataBR = (iso) => iso.split("-").reverse().join("/");
-const doISO = (iso) => { const [a, m, d] = iso.split("-").map(Number); return new Date(a, m - 1, d); };
-const diaSemana = (iso) => doISO(iso).toLocaleDateString("pt-BR", { weekday: "long" });
-const servicoPorId = (id) => SERVICOS.find((s) => s.id === id);
-const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const nomesBarbeiros = CONFIG.barbeiros.map((b) => b.nome);
 
 /* =====================================================
-   ARMAZENAMENTO (localStorage — troque por API/Supabase depois)
-   ===================================================== */
+   FUNÇÕES AUXILIARES
+===================================================== */
+
+const $ = seletor => document.querySelector(seletor);
 
 const CHAVE = "v7_agendamentos";
 const CHAVE_CLIENTE = "v7_cliente";
 
+const brl = valor => Number(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const apenasNumeros = valor => String(valor || "").replace(/\D/g, "");
+
+const paraMin = hora => {
+    const [h, m] = hora.split(":").map(Number);
+    return h * 60 + m;
+};
+
+const paraHHMM = minutos =>
+    `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`;
+
+const isoData = data =>
+    `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`;
+
+const dataBR = iso => iso ? iso.split("-").reverse().join("/") : "";
+const servicoPorId = id => SERVICOS.find(s => s.id === id);
+
+const nomesDias = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+
+function escaparHTML(valor) {
+    return String(valor ?? "").replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+    })[c]);
+}
+
+function formatarTelefone(valor) {
+    const numeros = apenasNumeros(valor).slice(0, 11);
+
+    if (!numeros.length) return "";
+    if (numeros.length <= 2) return `(${numeros}`;
+
+    const ddd = numeros.slice(0, 2);
+    const numero = numeros.slice(2);
+
+    if (numeros.length <= 6) return `(${ddd}) ${numero}`;
+    if (numeros.length === 11) return `(${ddd}) ${numero.slice(0, 5)}-${numero.slice(5)}`;
+
+    return `(${ddd}) ${numero.slice(0, 4)}-${numero.slice(4)}`;
+}
+
+function telefoneValido(valor) {
+    const n = apenasNumeros(valor);
+    return n.length === 10 || n.length === 11;
+}
+
+function aplicarMascaraTelefone(campo) {
+    if (!campo) return;
+    campo.addEventListener("input", () => { campo.value = formatarTelefone(campo.value); });
+}
+
+aplicarMascaraTelefone($("#telefone"));
+aplicarMascaraTelefone($("#cancel-telefone"));
+
+
+/* =====================================================
+   ARMAZENAMENTO (localStorage — troque por Supabase depois)
+===================================================== */
+
 function lerAgendamentos() {
-    try { return JSON.parse(localStorage.getItem(CHAVE)) || []; } catch { return []; }
+    try {
+        const dados = JSON.parse(localStorage.getItem(CHAVE));
+        return Array.isArray(dados) ? dados : [];
+    } catch {
+        return [];
+    }
 }
+
 function gravarAgendamentos(lista) {
-    try { localStorage.setItem(CHAVE, JSON.stringify(lista)); } catch { /* sem storage */ }
+    try {
+        localStorage.setItem(CHAVE, JSON.stringify(lista));
+        return true;
+    } catch (erro) {
+        console.error(erro);
+        return false;
+    }
 }
+
 function lerCliente() {
     try { return JSON.parse(localStorage.getItem(CHAVE_CLIENTE)) || {}; } catch { return {}; }
 }
-function gravarCliente(c) {
-    try { localStorage.setItem(CHAVE_CLIENTE, JSON.stringify(c)); } catch { /* sem storage */ }
+
+function gravarCliente(cliente) {
+    try { localStorage.setItem(CHAVE_CLIENTE, JSON.stringify(cliente)); return true; } catch { return false; }
 }
 
+function agendamentoAtivo(a) {
+    return a.status !== "cancelado" && a.cancelado !== true;
+}
+
+
 /* =====================================================
-   TEXTOS AUTOMÁTICOS
-   ===================================================== */
+   TEXTOS E LINKS AUTOMÁTICOS
+===================================================== */
 
-const nomesDias = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
-const textoDias = CONFIG.diasAbertos.length === 6 && !CONFIG.diasAbertos.includes(0)
-    ? "Segunda a sábado"
-    : CONFIG.diasAbertos.map((d) => nomesDias[d]).join(", ");
-$("#info-funcionamento").textContent = `${textoDias}, ${CONFIG.abre} às ${CONFIG.fecha}`;
-$("#ano").textContent = new Date().getFullYear();
+const linkZap = texto => `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(texto)}`;
 
-const linkZap = (texto = "") => `https://wa.me/${CONFIG.whatsapp}${texto ? "?text=" + encodeURIComponent(texto) : ""}`;
-$("#btn-whatsapp").href = linkZap("Olá! Gostaria de falar com a V7 Barbearia.");
+if ($("#ano")) $("#ano").textContent = new Date().getFullYear();
 
-// Endereço, Google Maps e Instagram
+const diasPadrao = CONFIG.diasAbertos.length === 6 && !CONFIG.diasAbertos.includes(0);   // segunda a sábado
+
+if ($("#info-funcionamento")) {
+    const dias = diasPadrao ? "Segunda a sábado" : CONFIG.diasAbertos.map(d => nomesDias[d]).join(", ");
+    $("#info-funcionamento").textContent = `${dias}, ${CONFIG.abre} às ${CONFIG.fecha}`;
+}
+
+// Etiquetas da tela inicial (calculadas do CONFIG e dos SERVICOS)
+if ($("#hero-chips")) {
+    const menorPreco = Math.min(...SERVICOS.map(s => s.preco));
+    const dias = diasPadrao ? "Seg a sáb" : CONFIG.diasAbertos.map(d => nomesDias[d].slice(0, 3)).join(", ");
+
+    $("#hero-chips").innerHTML = [
+        `${CONFIG.barbeiros.length} barbeiros`,
+        `${dias} · ${CONFIG.abre} às ${CONFIG.fecha}`,
+        `Serviços a partir de ${brl(menorPreco)}`
+    ].map(texto => `<li>${texto}</li>`).join("");
+}
+
+["#header-whatsapp", "#footer-whatsapp", "#btn-whatsapp"].forEach(seletor => {
+    const link = $(seletor);
+    if (link) link.href = linkZap("Olá! Gostaria de falar com a V7 Barbearia.");
+});
+
 const linkMapa = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(CONFIG.endereco)}`;
-$("#info-endereco").textContent = CONFIG.endereco;
-$("#link-mapa").href = linkMapa;
-$("#como-chegar").href = linkMapa;
-$("#endereco-confirmado").textContent = CONFIG.endereco;
-$("#link-instagram").href = `https://instagram.com/${CONFIG.instagram}`;
-$("#texto-instagram").textContent = `@${CONFIG.instagram}`;
-$("#mapa-frame").src = `https://maps.google.com/maps?q=${encodeURIComponent(CONFIG.endereco)}&output=embed`;
+
+if ($("#info-endereco")) $("#info-endereco").textContent = CONFIG.endereco;
+if ($("#link-mapa")) $("#link-mapa").href = linkMapa;
+if ($("#mapa-frame")) $("#mapa-frame").src = `https://maps.google.com/maps?q=${encodeURIComponent(CONFIG.endereco)}&output=embed`;
+if ($("#como-chegar")) $("#como-chegar").href = linkMapa;
+if ($("#endereco-confirmado")) $("#endereco-confirmado").textContent = CONFIG.endereco;
+if ($("#link-instagram")) $("#link-instagram").href = `https://instagram.com/${CONFIG.instagram}`;
+if ($("#texto-instagram")) $("#texto-instagram").textContent = `@${CONFIG.instagram}`;
+
 
 /* =====================================================
-   NAVEGAÇÃO ENTRE TELAS (#inicio / #sobre = home, #agendar = agendamento)
-   ===================================================== */
+   MENU MOBILE
+===================================================== */
+
+const botaoMenu = $("#menu-toggle");
+const menuMobile = $("#navigation");
+
+function fecharMenuMobile() {
+    if (!botaoMenu || !menuMobile) return;
+
+    menuMobile.classList.remove("aberto");
+    botaoMenu.classList.remove("ativo");
+    botaoMenu.setAttribute("aria-expanded", "false");
+    botaoMenu.setAttribute("aria-label", "Abrir menu");
+}
+
+if (botaoMenu && menuMobile) {
+    botaoMenu.addEventListener("click", () => {
+        const aberto = menuMobile.classList.toggle("aberto");
+
+        botaoMenu.classList.toggle("ativo", aberto);
+        botaoMenu.setAttribute("aria-expanded", String(aberto));
+        botaoMenu.setAttribute("aria-label", aberto ? "Fechar menu" : "Abrir menu");
+    });
+
+    menuMobile.querySelectorAll("a").forEach(link => link.addEventListener("click", fecharMenuMobile));
+}
+
+// fecha o menu ao tocar fora dele ou apertar ESC
+document.addEventListener("click", evento => {
+    if (menuMobile.classList.contains("aberto") && !evento.target.closest("#navigation, #menu-toggle")) {
+        fecharMenuMobile();
+    }
+});
+document.addEventListener("keydown", evento => { if (evento.key === "Escape") fecharMenuMobile(); });
+
+
+/* =====================================================
+   NAVEGAÇÃO ENTRE TELAS (#agendar = agendamento)
+===================================================== */
 
 const home = $("#home");
 const telaAgendar = $("#agendar");
+const secoes = document.querySelectorAll("[data-etapa]");
 
 function rota() {
-    const h = location.hash;
-    const emAgendar = h === "#agendar";
-    const jaEstava = !telaAgendar.hidden;
+    const emAgendar = location.hash === "#agendar";
+    const jaEstavaAgendando = !telaAgendar.hidden;
 
     home.hidden = emAgendar;
     telaAgendar.hidden = !emAgendar;
     document.body.classList.toggle("em-agendar", emAgendar);
 
     if (emAgendar) {
-        if (!jaEstava) reiniciarFluxo();
+        if (!jaEstavaAgendando) reiniciarFluxo();
+        fecharMenuMobile();
         window.scrollTo(0, 0);
         return;
     }
-    let alvo = null;
-    try { alvo = h.length > 1 ? document.querySelector(h) : null; } catch { /* hash inválido */ }
-    alvo ? alvo.scrollIntoView() : window.scrollTo(0, 0);
+
+    fecharMenuMobile();
+
+    const alvo = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
+
+    if (alvo) {
+        setTimeout(() => alvo.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+    } else {
+        window.scrollTo(0, 0);
+    }
 }
+
 window.addEventListener("hashchange", rota);
 
+
 /* =====================================================
-   FLUXO DE AGENDAMENTO (5 etapas)
-   ===================================================== */
+   ESTADO DO AGENDAMENTO
+===================================================== */
 
 const TITULOS = ["Escolha o profissional", "Escolha o serviço", "Escolha o dia e o horário", "Seus dados", "Tudo certo!"];
+
 const estado = { etapa: 1, barbeiro: "", servicoId: "", data: "", hora: "" };
-const hoje = new Date();
 
-function irPara(n) {
-    estado.etapa = n;
-    document.querySelectorAll("[data-etapa]").forEach((s) => { s.hidden = Number(s.dataset.etapa) !== n; });
-    $("#titulo-etapa").textContent = TITULOS[n - 1];
-    $("#voltar").hidden = n === 5;
-    $("#progresso").hidden = n === 5;
-    document.querySelectorAll("#progresso i").forEach((i, k) => i.classList.toggle("ativo", k < n));
-
-    if (n === 3) { renderDatas(); renderHorarios(); }
-    if (n === 4) renderResumo();
-    window.scrollTo(0, 0);
-}
+let ultimoAgendamento = null;
 
 function reiniciarFluxo() {
-    Object.assign(estado, { barbeiro: "", servicoId: "", data: "", hora: "" });
-    irPara(1);
-}
-
-$("#voltar").addEventListener("click", () => {
-    if (estado.etapa === 1) location.hash = "#inicio";
-    else irPara(estado.etapa - 1);
-});
-
-/* ---- Etapa 1: profissional ---- */
-
-const avatar = (b) => b.foto
-    ? `<img class="avatar" src="${esc(b.foto)}" alt="${esc(b.nome)}">`
-    : `<span class="avatar" aria-hidden="true">${esc(b.nome.charAt(0).toUpperCase())}</span>`;
-
-$("#lista-barbeiros").innerHTML = [
-    `<button type="button" class="barbeiro-card" data-barbeiro="">
-        <span class="avatar" aria-hidden="true">★</span><strong>Sem preferência</strong><small>Primeiro disponível</small>
-    </button>`,
-    ...CONFIG.barbeiros.map((b) => `
-    <button type="button" class="barbeiro-card" data-barbeiro="${esc(b.nome)}">
-        ${avatar(b)}<strong>${esc(b.nome)}</strong><small>${b.instagram ? "@" + esc(b.instagram) : "Barbeiro"}</small>
-    </button>`)
-].join("");
-
-$("#lista-barbeiros").addEventListener("click", (e) => {
-    const card = e.target.closest("[data-barbeiro]");
-    if (!card) return;
-    estado.barbeiro = card.dataset.barbeiro;
-    irPara(2);
-});
-
-/* ---- Etapa 2: serviço ---- */
-
-$("#lista-servicos").innerHTML = SERVICOS.map((s) => `
-    <button type="button" class="servico-item${s.destaque ? " destaque" : ""}" data-servico="${s.id}">
-        <div>
-            <strong>${s.nome}${s.destaque ? '<span class="servico-tag">Mais completo</span>' : ""}</strong>
-            <small>${s.duracao} min</small>
-        </div>
-        <div class="preco"><s>${brl(s.de)}</s><b>${brl(s.preco)}</b></div>
-    </button>`).join("");
-
-$("#lista-servicos").addEventListener("click", (e) => {
-    const item = e.target.closest("[data-servico]");
-    if (!item) return;
-    estado.servicoId = item.dataset.servico;
+    estado.etapa = 1;
+    estado.barbeiro = "";
+    estado.servicoId = "";
+    estado.data = "";
     estado.hora = "";
-    irPara(3);
-});
 
-/* ---- Etapa 3: dia e horário (de hoje em diante) ---- */
+    const cliente = lerCliente();
 
-function diasDisponiveis() {
-    const dias = [];
-    for (let i = 0; dias.length < CONFIG.diasMostrados && i < 60; i++) {
-        const d = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + i);
-        if (CONFIG.diasAbertos.includes(d.getDay())) dias.push(isoData(d));
-    }
-    return dias;
+    $("#nome").value = cliente.nome || "";
+    $("#telefone").value = formatarTelefone(cliente.telefone || "");
+    $("#erro").textContent = "";
+
+    renderBarbeiros();
+    atualizarEtapa();
 }
+
+
+/* ---------- Etapa 1: barbeiros ---------- */
+
+function renderBarbeiros() {
+    const lista = $("#lista-barbeiros");
+    lista.innerHTML = "";
+
+    CONFIG.barbeiros.forEach(barbeiro => {
+        const botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "barbeiro-card";
+
+        const avatar = barbeiro.foto
+            ? `<img class="avatar" src="${escaparHTML(barbeiro.foto)}" alt="${escaparHTML(barbeiro.nome)}">`
+            : `<div class="avatar" aria-hidden="true">${escaparHTML(barbeiro.nome.charAt(0))}</div>`;
+
+        botao.innerHTML = `
+            ${avatar}
+            <strong>${escaparHTML(barbeiro.nome)}</strong>
+            <small>Selecionar profissional</small>
+            ${barbeiro.instagram ? `<span class="barbeiro-instagram">@${escaparHTML(barbeiro.instagram)}</span>` : ""}
+        `;
+
+        botao.addEventListener("click", () => {
+            estado.barbeiro = barbeiro.nome;
+            estado.servicoId = "";
+            estado.data = "";
+            estado.hora = "";
+            estado.etapa = 2;
+
+            renderServicos();
+            atualizarEtapa();
+        });
+
+        lista.appendChild(botao);
+    });
+}
+
+
+/* ---------- Etapa 2: serviços ---------- */
+
+function renderServicos() {
+    const lista = $("#lista-servicos");
+    lista.innerHTML = "";
+
+    SERVICOS.forEach(servico => {
+        const botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "servico-item";
+        if (servico.destaque) botao.classList.add("destaque");
+
+        botao.innerHTML = `
+            <span>
+                <strong>${escaparHTML(servico.nome)}</strong>
+                <small>${servico.duracao} minutos</small>
+            </span>
+            <span class="preco">
+                <s>${brl(servico.de)}</s>
+                <b>${brl(servico.preco)}</b>
+            </span>
+        `;
+
+        botao.addEventListener("click", () => {
+            estado.servicoId = servico.id;
+            estado.data = "";
+            estado.hora = "";
+            estado.etapa = 3;
+
+            renderDatas();
+            atualizarEtapa();
+        });
+
+        lista.appendChild(botao);
+    });
+}
+
+
+/* ---------- Horários ocupados ---------- */
+
+function horarioOcupado(hora, duracao, data = estado.data, barbeiro = estado.barbeiro) {
+    const inicioNovo = paraMin(hora);
+    const fimNovo = inicioNovo + duracao;
+
+    return lerAgendamentos().some(a => {
+        if (!agendamentoAtivo(a)) return false;
+        if (a.data !== data || a.barbeiro !== barbeiro || !a.hora) return false;
+
+        const servico = servicoPorId(a.servicoId);
+        const duracaoExistente = servico ? servico.duracao : CONFIG.passoMin;
+
+        const inicioExistente = paraMin(a.hora);
+        const fimExistente = inicioExistente + duracaoExistente;
+
+        // dois horários se chocam quando um começa antes de o outro terminar
+        return inicioNovo < fimExistente && fimNovo > inicioExistente;
+    });
+}
+
+
+/* ---------- Etapa 3: datas ---------- */
 
 function renderDatas() {
-    const dias = diasDisponiveis();
-    if (!dias.includes(estado.data)) estado.data = dias[0];
+    const lista = $("#lista-datas");
+    lista.innerHTML = "";
+
+    const hoje = new Date();
+    const diasDisponiveis = [];
+
+    for (let deslocamento = 0; diasDisponiveis.length < CONFIG.diasMostrados && deslocamento < 90; deslocamento++) {
+        const data = new Date(hoje);
+        data.setDate(hoje.getDate() + deslocamento);
+
+        if (CONFIG.diasAbertos.includes(data.getDay())) diasDisponiveis.push(data);
+    }
+
+    if (!diasDisponiveis.length) {
+        lista.textContent = "Não há datas disponíveis.";
+        $("#horarios").innerHTML = "";
+        return;
+    }
+
+    const datasISO = diasDisponiveis.map(isoData);
+    if (!datasISO.includes(estado.data)) estado.data = datasISO[0];
+
     const hojeISO = isoData(hoje);
+    const amanha = new Date(hoje);
+    amanha.setDate(hoje.getDate() + 1);
+    const amanhaISO = isoData(amanha);
 
-    $("#lista-datas").innerHTML = dias.map((iso) => {
-        const d = doISO(iso);
-        const rotulo = iso === hojeISO ? "Hoje" : d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
-        const mes = d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
-        return `<button type="button" class="data-chip${iso === estado.data ? " selecionado" : ""}" data-data="${iso}">
-            <small>${rotulo}</small><strong>${d.getDate()}</strong><small>${mes}</small></button>`;
-    }).join("");
-}
+    diasDisponiveis.forEach(data => {
+        const iso = isoData(data);
+        const rotulo = iso === hojeISO ? "hoje" : iso === amanhaISO ? "amanhã" : nomesDias[data.getDay()].slice(0, 3);
+        const mes = data.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
 
-$("#lista-datas").addEventListener("click", (e) => {
-    const chip = e.target.closest("[data-data]");
-    if (!chip) return;
-    estado.data = chip.dataset.data;
-    estado.hora = "";
-    renderDatas();
+        const botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "data-chip";
+        if (iso === estado.data) botao.classList.add("selecionado");
+        botao.setAttribute("aria-pressed", String(iso === estado.data));
+
+        botao.innerHTML = `
+            <small>${rotulo}</small>
+            <strong>${String(data.getDate()).padStart(2, "0")}</strong>
+            <small>${mes}</small>
+        `;
+
+        botao.addEventListener("click", () => {
+            estado.data = iso;
+            estado.hora = "";
+
+            // só troca a marcação (não refaz a lista, para a rolagem não voltar ao começo)
+            lista.querySelectorAll(".data-chip").forEach(chip => {
+                const ativo = chip === botao;
+                chip.classList.toggle("selecionado", ativo);
+                chip.setAttribute("aria-pressed", String(ativo));
+            });
+
+            renderHorarios();
+        });
+
+        lista.appendChild(botao);
+    });
+
     renderHorarios();
-});
-
-function barbeiroLivre(data, inicio, duracao, preferido = "") {
-    const fim = inicio + duracao;
-    const ocupados = lerAgendamentos().filter((a) => a.data === data);
-    const candidatos = preferido ? [preferido] : nomesBarbeiros;
-    const livres = candidatos.filter((b) =>
-        !ocupados.some((a) => a.barbeiro === b && inicio < a.fim && fim > a.inicio)
-    );
-    if (!livres.length) return null;
-    // Distribui igualmente: escolhe o livre com menos atendimentos no dia
-    const carga = (b) => ocupados.filter((a) => a.barbeiro === b).length;
-    return livres.sort((x, y) => carga(x) - carga(y))[0];
 }
+
+
+/* ---------- Etapa 3: horários (Manhã / Tarde / Noite) ---------- */
 
 function renderHorarios() {
-    const box = $("#horarios");
-    const s = servicoPorId(estado.servicoId);
-    const agora = new Date();
-    const ehHoje = estado.data === isoData(agora);
-    const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
+    const lista = $("#horarios");
+    lista.innerHTML = "";
 
-    const botoes = [];
-    for (let t = paraMin(CONFIG.abre); t + s.duracao <= paraMin(CONFIG.fecha); t += CONFIG.passoMin) {
-        if (ehHoje && t <= minutosAgora) continue;
-        const livre = barbeiroLivre(estado.data, t, s.duracao, estado.barbeiro);
-        botoes.push(`<button type="button" class="horario-opcao" data-hora="${paraHHMM(t)}"${livre ? "" : ' disabled title="Horário esgotado"'}>${paraHHMM(t)}</button>`);
-    }
+    const servico = servicoPorId(estado.servicoId);
 
-    const temLivre = botoes.some((b) => !b.includes("disabled"));
-    box.innerHTML = temLivre
-        ? botoes.join("")
-        : '<p class="horario-vazio">Sem horários disponíveis neste dia. Escolha outro dia acima.</p>';
-}
-
-$("#horarios").addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-hora]");
-    if (!btn || btn.disabled) return;
-    estado.hora = btn.dataset.hora;
-    irPara(4);
-});
-
-/* ---- Etapa 4: resumo + dados ---- */
-
-const inpNome = $("#nome");
-const inpTel = $("#telefone");
-const erro = $("#erro");
-
-function renderResumo() {
-    const s = servicoPorId(estado.servicoId);
-    $("#resumo").innerHTML = `
-        <div class="res-linha"><span>Profissional</span><strong>${esc(estado.barbeiro || "Primeiro disponível")}</strong></div>
-        <div class="res-linha"><span>Serviço</span><strong>${s.nome}</strong></div>
-        <div class="res-linha"><span>Data</span><strong>${diaSemana(estado.data)}, ${dataBR(estado.data)}</strong></div>
-        <div class="res-linha"><span>Horário</span><strong>${estado.hora}</strong></div>
-        <div class="res-linha total"><span>Valor</span><strong>${brl(s.preco)}</strong></div>`;
-
-    const salvo = lerCliente();                 // lembra o cliente para a próxima vez
-    if (!inpNome.value) inpNome.value = salvo.nome || "";
-    if (!inpTel.value) inpTel.value = salvo.telefone || "";
-    erro.textContent = "";
-}
-
-inpTel.addEventListener("input", () => {
-    const n = inpTel.value.replace(/\D/g, "").slice(0, 11);
-    inpTel.value = n.length > 6
-        ? `(${n.slice(0, 2)}) ${n.slice(2, n.length > 10 ? 7 : 6)}-${n.slice(n.length > 10 ? 7 : 6)}`
-        : n.length > 2 ? `(${n.slice(0, 2)}) ${n.slice(2)}` : n;
-});
-
-$("#form-dados").addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    const s = servicoPorId(estado.servicoId);
-    const nome = inpNome.value.trim();
-    const tel = inpTel.value.replace(/\D/g, "");
-
-    if (nome.length < 2) return (erro.textContent = "Informe seu nome.");
-    if (tel.length < 10) return (erro.textContent = "Informe um WhatsApp válido com DDD.");
-
-    const inicio = paraMin(estado.hora);
-    const barbeiro = barbeiroLivre(estado.data, inicio, s.duracao, estado.barbeiro);
-
-    // Pode ter sido reservado por outra pessoa enquanto o cliente preenchia
-    if (!barbeiro) {
-        estado.hora = "";
-        irPara(3);
-        $("#horarios").insertAdjacentHTML("afterbegin", '<p class="horario-vazio">Esse horário acabou de ser reservado. Escolha outro.</p>');
+    if (!servico || !estado.data || !estado.barbeiro) {
+        lista.textContent = "Escolha um profissional, serviço e data.";
         return;
     }
 
-    const ag = { id: Date.now(), data: estado.data, inicio, fim: inicio + s.duracao, servico: s.id, barbeiro, nome, telefone: tel };
-    gravarAgendamentos([...lerAgendamentos(), ag]);
-    gravarCliente({ nome, telefone: inpTel.value });
+    const agora = new Date();
+    const hojeISO = isoData(agora);
+    const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
 
-    const dataTxt = `${diaSemana(ag.data)}, ${dataBR(ag.data)}`;
+    let disponiveis = 0;
+    let periodoAtual = "";
+
+    for (let minutos = paraMin(CONFIG.abre); minutos + servico.duracao <= paraMin(CONFIG.fecha); minutos += CONFIG.passoMin) {
+        const passado = estado.data < hojeISO || (estado.data === hojeISO && minutos <= minutosAgora);
+        if (passado) continue;                       // horários que já passaram nem aparecem
+
+        const hora = paraHHMM(minutos);
+        const periodo = minutos < 720 ? "Manhã" : minutos < 1080 ? "Tarde" : "Noite";
+
+        if (periodo !== periodoAtual) {
+            periodoAtual = periodo;
+
+            const titulo = document.createElement("p");
+            titulo.className = "periodo";
+            titulo.textContent = periodo;
+            lista.appendChild(titulo);
+        }
+
+        const botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "horario-opcao";
+        botao.textContent = hora;
+
+        if (horarioOcupado(hora, servico.duracao)) {
+            botao.classList.add("indisponivel");
+            botao.disabled = true;
+            botao.title = "Horário ocupado";
+        } else {
+            disponiveis++;
+
+            botao.addEventListener("click", () => {
+                estado.hora = hora;
+                estado.etapa = 4;
+
+                renderResumo();
+                $("#erro").textContent = "";
+                atualizarEtapa();
+            });
+        }
+
+        lista.appendChild(botao);
+    }
+
+    if (!disponiveis) {
+        lista.innerHTML = '<p class="horario-vazio">Sem horários livres neste dia. Escolha outro dia acima.</p>';
+    }
+}
+
+
+/* ---------- Etapa 4: resumo ---------- */
+
+function renderResumo() {
+    const servico = servicoPorId(estado.servicoId);
+    if (!servico) return;
+
+    $("#resumo").innerHTML = `
+        <div class="res-linha"><span>Profissional</span><strong>${escaparHTML(estado.barbeiro)}</strong></div>
+        <div class="res-linha"><span>Serviço</span><strong>${escaparHTML(servico.nome)}</strong></div>
+        <div class="res-linha"><span>Data</span><strong>${dataBR(estado.data)}</strong></div>
+        <div class="res-linha"><span>Horário</span><strong>${escaparHTML(estado.hora)}</strong></div>
+        <div class="res-linha total"><span>Total</span><strong>${brl(servico.preco)}</strong></div>
+    `;
+}
+
+
+/* ---------- Mostrar só a etapa atual ---------- */
+
+function atualizarEtapa() {
+    secoes.forEach(secao => {
+        secao.hidden = Number(secao.dataset.etapa) !== estado.etapa;
+    });
+
+    $("#titulo-etapa").textContent = TITULOS[estado.etapa - 1];
+
+    $("#progresso").querySelectorAll("i").forEach((barra, indice) => {
+        barra.style.background = indice < Math.min(estado.etapa, 4) ? "var(--gold)" : "var(--line)";
+    });
+
+    // Voltar fica disponível em todas as etapas, menos na última (na etapa 1 leva ao início)
+    $("#voltar").style.visibility = estado.etapa === 5 ? "hidden" : "visible";
+
+    // Linha com o que já foi escolhido: "Carlos · Corte masculino · 25/11 às 14:00"
+    const servico = servicoPorId(estado.servicoId);
+    const partes = [];
+
+    if (estado.etapa >= 2 && estado.etapa <= 4 && estado.barbeiro) partes.push(estado.barbeiro);
+    if (estado.etapa >= 3 && estado.etapa <= 4 && servico) partes.push(servico.nome);
+    if (estado.etapa === 4 && estado.data) partes.push(`${dataBR(estado.data).slice(0, 5)} às ${estado.hora}`);
+
+    $("#escolhas").textContent = partes.join(" · ");
+    $("#escolhas").hidden = !partes.length;
+
+    if (estado.etapa === 5 && navigator.vibrate) navigator.vibrate(40);   // vibra ao confirmar (Android)
+}
+
+
+/* ---------- Botão voltar ---------- */
+
+$("#voltar").addEventListener("click", () => {
+    if (estado.etapa === 1) {
+        location.hash = "#inicio";
+        return;
+    }
+
+    estado.etapa--;
+
+    if (estado.etapa === 1) renderBarbeiros();
+    if (estado.etapa === 2) renderServicos();
+    if (estado.etapa === 3) renderDatas();
+    if (estado.etapa === 4) renderResumo();
+
+    atualizarEtapa();
+});
+
+
+/* ---------- Confirmar agendamento ---------- */
+
+$("#form-dados").addEventListener("submit", evento => {
+    evento.preventDefault();
+
+    const nome = $("#nome").value.trim();
+    const telefone = apenasNumeros($("#telefone").value);
+    const servico = servicoPorId(estado.servicoId);
+
+    $("#erro").textContent = "";
+
+    if (nome.length < 2) {
+        $("#erro").textContent = "Informe seu nome corretamente.";
+        return;
+    }
+
+    if (!telefoneValido(telefone)) {
+        $("#erro").textContent = "Informe um WhatsApp válido com DDD.";
+        return;
+    }
+
+    if (!servico || !estado.barbeiro || !estado.data || !estado.hora) {
+        $("#erro").textContent = "Confira os dados do seu agendamento.";
+        return;
+    }
+
+    if (horarioOcupado(estado.hora, servico.duracao)) {
+        $("#erro").textContent = "Esse horário acabou de ser reservado. Escolha outro.";
+        estado.etapa = 3;
+        renderDatas();
+        atualizarEtapa();
+        return;
+    }
+
+    const agora = new Date();
+    const hojeISO = isoData(agora);
+    const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
+
+    if (estado.data < hojeISO || (estado.data === hojeISO && paraMin(estado.hora) <= minutosAgora)) {
+        $("#erro").textContent = "Esse horário já passou. Escolha outro.";
+        estado.etapa = 3;
+        renderDatas();
+        atualizarEtapa();
+        return;
+    }
+
+    const agendamento = {
+        id: `v7-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        nome,
+        telefone,
+        barbeiro: estado.barbeiro,
+        servicoId: estado.servicoId,
+        data: estado.data,
+        hora: estado.hora,
+        status: "ativo",
+        criadoEm: new Date().toISOString()
+    };
+
+    const lista = lerAgendamentos();
+    lista.push(agendamento);
+
+    if (!gravarAgendamentos(lista)) {
+        $("#erro").textContent = "Não foi possível salvar o agendamento neste navegador.";
+        return;
+    }
+
+    gravarCliente({ nome, telefone });
+    ultimoAgendamento = agendamento;
+
+    mostrarConfirmacao(agendamento);
+
+    estado.etapa = 5;
+    atualizarEtapa();
+});
+
+
+/* ---------- Etapa 5: confirmação ---------- */
+
+function mostrarConfirmacao(agendamento) {
+    const servico = servicoPorId(agendamento.servicoId);
+    if (!servico) return;
+
     $("#confirmacao-detalhes").innerHTML = `
-        <li><span>Cliente:</span> ${esc(nome)}</li>
-        <li><span>Serviço:</span> ${s.nome} (${brl(s.preco)})</li>
-        <li><span>Data:</span> ${dataTxt}</li>
-        <li><span>Horário:</span> ${estado.hora}</li>
-        <li><span>Profissional:</span> ${esc(barbeiro)}</li>`;
+        <li><span>Cliente:</span> ${escaparHTML(agendamento.nome)}</li>
+        <li><span>Profissional:</span> ${escaparHTML(agendamento.barbeiro)}</li>
+        <li><span>Serviço:</span> ${escaparHTML(servico.nome)}</li>
+        <li><span>Data:</span> ${dataBR(agendamento.data)}</li>
+        <li><span>Horário:</span> ${escaparHTML(agendamento.hora)}</li>
+        <li><span>Valor:</span> ${brl(servico.preco)}</li>
+    `;
 
     $("#confirmacao-whatsapp").href = linkZap(
-        `Olá! Quero confirmar meu agendamento na V7 Barbearia:\n` +
-        `Nome: ${nome}\nServiço: ${s.nome} (${brl(s.preco)})\n` +
-        `Data: ${dataTxt}\nHorário: ${estado.hora}\nProfissional: ${barbeiro}`
+        `Olá! Meu agendamento na ${CONFIG.local} foi realizado.\n\n` +
+        `Nome: ${agendamento.nome}\n` +
+        `Profissional: ${agendamento.barbeiro}\n` +
+        `Serviço: ${servico.nome}\n` +
+        `Data: ${dataBR(agendamento.data)}\n` +
+        `Horário: ${agendamento.hora}`
     );
+}
 
-    prepararCalendario(ag);
-    irPara(5);
-});
 
 /* =====================================================
-   CALENDÁRIO DO CLIENTE (Google Agenda, iPhone e Android)
-   ===================================================== */
+   CALENDÁRIO (arquivo .ics)
+===================================================== */
 
-const dtLocal = (iso, min) => iso.replaceAll("-", "") + "T" + paraHHMM(min).replace(":", "") + "00";
-
-function dadosEvento(ag) {
-    const s = servicoPorId(ag.servico);
-    return {
-        titulo: `${s.nome} — ${CONFIG.local}`,
-        ini: dtLocal(ag.data, ag.inicio),
-        fim: dtLocal(ag.data, ag.fim),
-        desc: `Profissional: ${ag.barbeiro}\nValor: ${brl(s.preco)}`
-    };
+function escaparICS(valor) {
+    return String(valor || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/;/g, "\\;")
+        .replace(/,/g, "\\,")
+        .replace(/\r?\n/g, "\\n");
 }
 
-function linkGoogleAgenda(ag) {
-    const ev = dadosEvento(ag);
-    const p = new URLSearchParams({ action: "TEMPLATE", text: ev.titulo, dates: `${ev.ini}/${ev.fim}`, details: ev.desc, location: `${CONFIG.local}, ${CONFIG.endereco}` });
-    return `https://calendar.google.com/calendar/render?${p}`;
+function gerarCalendario() {
+    const a = ultimoAgendamento;
+
+    if (!a) {
+        alert("Nenhum agendamento encontrado.");
+        return;
+    }
+
+    const servico = servicoPorId(a.servicoId);
+    if (!servico) return;
+
+    const inicio = new Date(`${a.data}T${a.hora}:00`);
+    const fim = new Date(inicio.getTime() + servico.duracao * 60000);
+
+    const formatoICS = data => data.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+
+    const conteudo = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//V7 Barbearia//Agendamento//PT-BR",
+        "CALSCALE:GREGORIAN",
+        "BEGIN:VEVENT",
+        `UID:${escaparICS(a.id)}@v7barbearia`,
+        `DTSTART:${formatoICS(inicio)}`,
+        `DTEND:${formatoICS(fim)}`,
+        `SUMMARY:${escaparICS(CONFIG.local + " - " + servico.nome)}`,
+        `DESCRIPTION:${escaparICS("Profissional: " + a.barbeiro)}`,
+        `LOCATION:${escaparICS(CONFIG.endereco)}`,
+        "END:VEVENT",
+        "END:VCALENDAR"
+    ].join("\r\n");
+
+    const url = URL.createObjectURL(new Blob([conteudo], { type: "text/calendar;charset=utf-8" }));
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "agendamento-v7.ics";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function baixarICS(ag) {
-    const ev = dadosEvento(ag);
-    const t = (x) => x.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
-    const carimbo = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
-    const linhas = [
-        "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//V7 Barbearia//Agendamento//PT-BR", "BEGIN:VEVENT",
-        `UID:${ag.id}@v7barbearia`, `DTSTAMP:${carimbo}`, `DTSTART:${ev.ini}`, `DTEND:${ev.fim}`,
-        `SUMMARY:${t(ev.titulo)}`, `DESCRIPTION:${t(ev.desc)}`, `LOCATION:${t(CONFIG.local + ", " + CONFIG.endereco)}`,
-        "BEGIN:VALARM", "TRIGGER:-PT60M", "ACTION:DISPLAY", "DESCRIPTION:Seu horário na V7 é daqui a 1 hora", "END:VALARM",
-        "END:VEVENT", "END:VCALENDAR"
-    ];
-    const url = URL.createObjectURL(new Blob([linhas.join("\r\n")], { type: "text/calendar;charset=utf-8" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "agendamento-v7.ics";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
-
-// Um botão só: o site detecta o aparelho e usa o calendário certo.
+// Um botão só: o site detecta o aparelho.
 // iPhone, iPad e Mac -> arquivo .ics (abre o app Calendário)
-// Android e outros   -> Google Agenda
+// Android e outros   -> Google Agenda já preenchido
 const ehApple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
-let agendamentoAtual = null;
 
-function prepararCalendario(ag) { agendamentoAtual = ag; }
+function abrirCalendario() {
+    const a = ultimoAgendamento;
+    const servico = a && servicoPorId(a.servicoId);
+    if (!a || !servico) return;
 
-$("#cal-adicionar").addEventListener("click", () => {
-    if (!agendamentoAtual) return;
-    if (ehApple) baixarICS(agendamentoAtual);
-    else window.open(linkGoogleAgenda(agendamentoAtual), "_blank", "noopener");
-});
-$("#cal-fallback").addEventListener("click", () => { if (agendamentoAtual) baixarICS(agendamentoAtual); });
+    if (ehApple) {
+        gerarCalendario();
+        return;
+    }
+
+    const inicio = new Date(`${a.data}T${a.hora}:00`);
+    const fim = new Date(inicio.getTime() + servico.duracao * 60000);
+    const formato = data => data.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+
+    const parametros = new URLSearchParams({
+        action: "TEMPLATE",
+        text: `${CONFIG.local} - ${servico.nome}`,
+        dates: `${formato(inicio)}/${formato(fim)}`,
+        details: `Profissional: ${a.barbeiro}`,
+        location: `${CONFIG.local}, ${CONFIG.endereco}`
+    });
+
+    window.open(`https://calendar.google.com/calendar/render?${parametros}`, "_blank", "noopener");
+}
+
+$("#cal-adicionar").addEventListener("click", abrirCalendario);
+$("#cal-fallback").addEventListener("click", gerarCalendario);   // sempre baixa o arquivo .ics
+
 
 /* =====================================================
-   ÁREA DO BARBEIRO — só os agendamentos
-   ===================================================== */
+   CANCELAMENTO PELO CLIENTE
+===================================================== */
+
+let cancelamentosEncontrados = [];
+
+function mostrarMensagemCancelamento(mensagem, sucesso = false) {
+    const erro = $("#erro-cancelamento");
+    erro.textContent = mensagem;
+    erro.style.color = sucesso ? "var(--gold)" : "#ff6b6b";
+}
+
+function buscarAgendamentosDoCliente(telefone) {
+    return lerAgendamentos()
+        .map((agendamento, indice) => ({ agendamento, indice }))
+        .filter(item => apenasNumeros(item.agendamento.telefone) === telefone && agendamentoAtivo(item.agendamento));
+}
+
+function atualizarLinkCancelamento() {
+    const seletor = $("#cancel-agendamento");
+    const link = $("#cancelar-whatsapp");
+    if (!seletor || !link) return;
+
+    const indice = Number(seletor.value);
+    const item = cancelamentosEncontrados.find(registro => registro.indice === indice);
+
+    if (!item) {
+        link.href = linkZap("Olá! Gostaria de solicitar o cancelamento de um agendamento.");
+        return;
+    }
+
+    const a = item.agendamento;
+    const servico = servicoPorId(a.servicoId);
+
+    link.href = linkZap(
+        `Olá! Gostaria de solicitar o cancelamento do meu agendamento.\n\n` +
+        `Nome: ${a.nome}\n` +
+        `Profissional: ${a.barbeiro}\n` +
+        `Serviço: ${servico ? servico.nome : "Não informado"}\n` +
+        `Data: ${dataBR(a.data)}\n` +
+        `Horário: ${a.hora}`
+    );
+}
+
+function atualizarListaCancelamentos() {
+    const resultado = $("#resultado-cancelamento");
+    const seletor = $("#cancel-agendamento");
+
+    seletor.innerHTML = "";
+
+    if (!cancelamentosEncontrados.length) {
+        resultado.hidden = true;
+        return;
+    }
+
+    cancelamentosEncontrados.forEach(item => {
+        const a = item.agendamento;
+        const servico = servicoPorId(a.servicoId);
+
+        const opcao = document.createElement("option");
+        opcao.value = String(item.indice);
+        opcao.textContent = `${dataBR(a.data)} às ${a.hora} — ${servico ? servico.nome : "Serviço"} — ${a.barbeiro}`;
+
+        seletor.appendChild(opcao);
+    });
+
+    resultado.hidden = false;
+    atualizarLinkCancelamento();
+}
+
+$("#form-cancelamento").addEventListener("submit", evento => {
+    evento.preventDefault();
+    mostrarMensagemCancelamento("");
+
+    const telefone = apenasNumeros($("#cancel-telefone").value);
+
+    if (!telefoneValido(telefone)) {
+        $("#resultado-cancelamento").hidden = true;
+        mostrarMensagemCancelamento("Informe um WhatsApp válido com DDD.");
+        return;
+    }
+
+    cancelamentosEncontrados = buscarAgendamentosDoCliente(telefone);
+
+    if (!cancelamentosEncontrados.length) {
+        $("#resultado-cancelamento").hidden = true;
+        mostrarMensagemCancelamento("Não encontramos agendamentos ativos com esse WhatsApp neste navegador.");
+        return;
+    }
+
+    atualizarListaCancelamentos();
+    mostrarMensagemCancelamento(`Encontramos ${cancelamentosEncontrados.length} agendamento(s).`, true);
+});
+
+$("#cancel-agendamento").addEventListener("change", atualizarLinkCancelamento);
+
+$("#cancelar-site").addEventListener("click", () => {
+    const indice = Number($("#cancel-agendamento").value);
+    const telefone = apenasNumeros($("#cancel-telefone").value);
+
+    const lista = lerAgendamentos();
+    const a = lista[indice];
+
+    if (!a || !agendamentoAtivo(a)) {
+        mostrarMensagemCancelamento("Esse agendamento não está mais disponível para cancelamento.");
+        return;
+    }
+
+    if (apenasNumeros(a.telefone) !== telefone) {
+        mostrarMensagemCancelamento("O telefone informado não corresponde ao agendamento.");
+        return;
+    }
+
+    if (!confirm(`Deseja realmente cancelar o agendamento de ${dataBR(a.data)} às ${a.hora}?`)) return;
+
+    lista[indice] = { ...a, status: "cancelado", canceladoEm: new Date().toISOString() };
+
+    if (!gravarAgendamentos(lista)) {
+        mostrarMensagemCancelamento("Não foi possível registrar o cancelamento.");
+        return;
+    }
+
+    cancelamentosEncontrados = buscarAgendamentosDoCliente(telefone);
+    atualizarListaCancelamentos();
+
+    mostrarMensagemCancelamento("Agendamento cancelado com sucesso!", true);
+});
+
+$("#cancelar-whatsapp").href = linkZap("Olá! Gostaria de solicitar o cancelamento de um agendamento.");
+
+
+/* =====================================================
+   ÁREA DO BARBEIRO
+===================================================== */
 
 const painel = $("#painel");
-const agendaData = $("#agenda-data");
-const agendaBarbeiro = $("#agenda-barbeiro");
-let painelLiberado = false;
 
-agendaBarbeiro.innerHTML = '<option value="">Todos</option>' + nomesBarbeiros.map((b) => `<option value="${esc(b)}">${esc(b)}</option>`).join("");
+$("#abrir-painel").addEventListener("click", () => {
+    $("#painel-login").hidden = false;
+    $("#painel-agenda").hidden = true;
+    $("#pin").value = "";
+    $("#pin-erro").textContent = "";
 
-function renderAgenda() {
+    painel.showModal();
+});
+
+$("#painel-fechar").addEventListener("click", () => painel.close());
+painel.addEventListener("click", evento => { if (evento.target === painel) painel.close(); });
+
+$("#painel-login").addEventListener("submit", evento => {
+    evento.preventDefault();
+
+    if ($("#pin").value !== CONFIG.pinPainel) {
+        $("#pin-erro").textContent = "Senha incorreta.";
+        return;
+    }
+
+    $("#painel-login").hidden = true;
+    $("#painel-agenda").hidden = false;
+
+    $("#agenda-data").value = isoData(new Date());
+
+    $("#agenda-barbeiro").innerHTML =
+        '<option value="">Todos os barbeiros</option>' +
+        CONFIG.barbeiros.map(b => `<option value="${escaparHTML(b.nome)}">${escaparHTML(b.nome)}</option>`).join("");
+
+    renderPainel();
+});
+
+function renderPainel() {
+    const data = $("#agenda-data").value;
+    const barbeiro = $("#agenda-barbeiro").value;
+
     const lista = lerAgendamentos()
-        .filter((a) => a.data === agendaData.value && (!agendaBarbeiro.value || a.barbeiro === agendaBarbeiro.value))
-        .sort((x, y) => x.inicio - y.inicio);
+        .filter(a => a.data === data && agendamentoAtivo(a) && (!barbeiro || a.barbeiro === barbeiro))
+        .sort((a, b) => paraMin(a.hora) - paraMin(b.hora));
 
-    $("#agenda-resumo").textContent = lista.length
-        ? `${lista.length} agendamento${lista.length > 1 ? "s" : ""} em ${dataBR(agendaData.value)}`
-        : "Nenhum agendamento neste dia.";
+    $("#agenda-resumo").textContent = `${lista.length} agendamento(s) encontrado(s).`;
 
-    $("#agenda-lista").innerHTML = lista.map((a) => {
-        const s = servicoPorId(a.servico);
+    const container = $("#agenda-lista");
+
+    if (!lista.length) {
+        container.innerHTML = "<li>Nenhum agendamento ativo para esta data.</li>";
+        return;
+    }
+
+    container.innerHTML = lista.map(a => {
+        const servico = servicoPorId(a.servicoId);
         const fone = a.telefone.length <= 11 ? "55" + a.telefone : a.telefone;
-        const msg = `Olá, ${a.nome}! Seu horário na ${CONFIG.local} está confirmado:\n` +
-            `${s ? s.nome : "Atendimento"} com ${a.barbeiro}\n` +
-            `${diaSemana(a.data)}, ${dataBR(a.data)} às ${paraHHMM(a.inicio)}\n` +
+
+        const mensagem =
+            `Olá, ${a.nome}! Seu horário na ${CONFIG.local} está confirmado:\n` +
+            `${servico ? servico.nome : "Atendimento"} com ${a.barbeiro}\n` +
+            `${dataBR(a.data)} às ${a.hora}\n` +
             `Endereço: ${CONFIG.endereco}\nTe esperamos!`;
+
         return `
-        <li class="ag-item">
-            <div class="ag-hora">${paraHHMM(a.inicio)}<small>até ${paraHHMM(a.fim)}</small></div>
-            <div class="ag-info"><strong>${esc(a.nome)}</strong><span>${s ? s.nome : ""} · ${esc(a.barbeiro)}</span></div>
-            <div class="ag-acoes">
-                <a href="https://wa.me/${fone}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">Confirmar no WhatsApp</a>
-                <button type="button" data-cancelar="${a.id}">Cancelar</button>
-            </div>
-        </li>`;
+            <li class="agenda-item">
+                <strong>${escaparHTML(a.hora)} — ${escaparHTML(a.nome)}</strong><br>
+                ${escaparHTML(a.barbeiro)} | ${escaparHTML(servico ? servico.nome : "Serviço")}<br>
+                ${escaparHTML(a.telefone)}<br>
+                <a class="btn-ghost painel-zap" href="https://wa.me/${fone}?text=${encodeURIComponent(mensagem)}" target="_blank" rel="noopener">
+                    Confirmar no WhatsApp
+                </a>
+                <button type="button" class="btn cancelar-reserva-painel" data-id="${escaparHTML(a.id)}">
+                    Cancelar reserva
+                </button>
+            </li>
+        `;
     }).join("");
 }
 
-function mostrarPainel() {
-    $("#painel-login").hidden = painelLiberado;
-    $("#painel-agenda").hidden = !painelLiberado;
-    if (painelLiberado) {
-        if (!agendaData.value) agendaData.value = isoData(new Date());
-        renderAgenda();
-    }
-}
+$("#agenda-lista").addEventListener("click", evento => {
+    const botao = evento.target.closest(".cancelar-reserva-painel");
+    if (!botao) return;
 
-$("#abrir-painel").addEventListener("click", () => { mostrarPainel(); painel.showModal(); });
-$("#painel-fechar").addEventListener("click", () => painel.close());
-painel.addEventListener("click", (e) => { if (e.target === painel) painel.close(); });
+    const lista = lerAgendamentos();
+    const indice = lista.findIndex(a => a.id === botao.dataset.id);
 
-$("#painel-login").addEventListener("submit", (e) => {
-    e.preventDefault();
-    if ($("#pin").value === CONFIG.pinPainel) {
-        painelLiberado = true;
-        $("#pin").value = "";
-        $("#pin-erro").textContent = "";
-        mostrarPainel();
-    } else {
-        $("#pin-erro").textContent = "Senha incorreta.";
-    }
-});
-
-agendaData.addEventListener("change", renderAgenda);
-agendaBarbeiro.addEventListener("change", renderAgenda);
-
-$("#agenda-lista").addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-cancelar]");
-    if (!btn) return;
-    if (!btn.dataset.confirmando) {              // 1º clique pede confirmação
-        btn.dataset.confirmando = "1";
-        btn.textContent = "Confirmar?";
+    if (indice === -1) {
+        alert("Não foi possível localizar essa reserva.");
+        renderPainel();
         return;
     }
-    gravarAgendamentos(lerAgendamentos().filter((a) => String(a.id) !== btn.dataset.cancelar));
-    renderAgenda();
+
+    const agendamento = lista[indice];
+
+    if (!agendamentoAtivo(agendamento)) {
+        alert("Essa reserva já foi cancelada.");
+        renderPainel();
+        return;
+    }
+
+    const confirmar = confirm(
+        `Deseja cancelar esta reserva?\n\n` +
+        `Cliente: ${agendamento.nome}\n` +
+        `Profissional: ${agendamento.barbeiro}\n` +
+        `Data: ${dataBR(agendamento.data)}\n` +
+        `Horário: ${agendamento.hora}`
+    );
+
+    if (!confirmar) return;
+
+    lista[indice] = {
+        ...agendamento,
+        status: "cancelado",
+        canceladoEm: new Date().toISOString(),
+        canceladoPor: "barbeiro"
+    };
+
+    if (!gravarAgendamentos(lista)) {
+        alert("Erro ao salvar o cancelamento. Tente novamente.");
+        return;
+    }
+
+    renderPainel();
+
+    // atualiza a consulta do cliente, se estiver aberta
+    const telefone = apenasNumeros(agendamento.telefone);
+
+    if (apenasNumeros($("#cancel-telefone").value) === telefone) {
+        cancelamentosEncontrados = buscarAgendamentosDoCliente(telefone);
+        atualizarListaCancelamentos();
+    }
+
+    alert("Reserva cancelada com sucesso!\n\nO horário foi liberado na agenda deste navegador.");
 });
 
-/* =====================================================
-   INÍCIO
-   ===================================================== */
+$("#agenda-data").addEventListener("change", renderPainel);
+$("#agenda-barbeiro").addEventListener("change", renderPainel);
 
+
+/* =====================================================
+   BOTÃO FIXO "AGENDAR" NO CELULAR
+   (aparece depois da tela inicial; some no rodapé e no agendamento)
+===================================================== */
+
+const botaoFixo = $(".cta-fixo");
+
+if (botaoFixo && "IntersectionObserver" in window) {
+    let heroVisivel = true;
+    let rodapeVisivel = false;
+
+    const atualizarBotaoFixo = () => botaoFixo.classList.toggle(
+        "visivel",
+        !heroVisivel && !rodapeVisivel && !document.body.classList.contains("em-agendar")
+    );
+
+    new IntersectionObserver(entradas => { heroVisivel = entradas[0].isIntersecting; atualizarBotaoFixo(); })
+        .observe($("#inicio"));
+
+    new IntersectionObserver(entradas => { rodapeVisivel = entradas[0].isIntersecting; atualizarBotaoFixo(); })
+        .observe($("#contato"));
+
+    window.addEventListener("hashchange", () => setTimeout(atualizarBotaoFixo, 0));
+}
+
+
+/* =====================================================
+   SEÇÕES ENTRAM SUAVEMENTE AO ROLAR
+===================================================== */
+
+if ("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const observador = new IntersectionObserver((entradas, obs) => {
+        entradas.forEach(entrada => {
+            if (entrada.isIntersecting) {
+                entrada.target.classList.add("visivel");
+                obs.unobserve(entrada.target);
+            }
+        });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll(
+        ".sobre-conteudo, .sobre-imagem, .mapa-conteudo, .cancelamento-conteudo, .footer-conteudo"
+    ).forEach(elemento => {
+        elemento.classList.add("reveal");
+        observador.observe(elemento);
+    });
+}
+
+
+/* =====================================================
+   INICIALIZAÇÃO
+===================================================== */
+
+renderBarbeiros();
 rota();

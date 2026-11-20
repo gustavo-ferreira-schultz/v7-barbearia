@@ -1,4 +1,6 @@
-/* ========== VARIÁVEIS (paleta original) ========== */
+/* =========================================
+   V7 BARBEARIA — ESTILO GERAL
+========================================= */
 
 :root {
     --bg: #111111;
@@ -13,262 +15,264 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-
-html { scroll-behavior: smooth; scroll-padding-top: 80px; }
-
+html { scroll-behavior: smooth; scroll-padding-top: 90px; }
 [hidden] { display: none !important; }
 
 body { background: var(--bg); color: var(--text); font-family: Arial, sans-serif; line-height: 1.6; }
-
 img { max-width: 100%; display: block; }
-
-button { font-family: inherit; }
-
+button, input, select { font-family: inherit; }
+button { cursor: pointer; }
+a { transition: color .25s, background .25s, transform .25s; }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 
 
-/* ========== BOTÕES ========== */
-
+/* ===== BOTÕES ===== */
 .btn, .btn-agendar {
-    display: inline-block;
-    padding: 14px 26px;
-    background: var(--gold);
-    color: var(--bg);
-    border: 0;
-    border-radius: 4px;
-    font: bold 15px Arial, sans-serif;
-    text-decoration: none;
-    text-align: center;
-    cursor: pointer;
-    transition: background .25s, transform .25s;
+    display: inline-block; padding: 14px 26px;
+    background: var(--gold); color: var(--bg);
+    border: 0; border-radius: 4px;
+    font: bold 15px Arial, sans-serif; text-decoration: none; text-align: center;
+    cursor: pointer; transition: background .25s, transform .25s;
 }
-
-.btn:hover, .btn-agendar:hover { background: var(--text); transform: translateY(-2px); }
-
-.btn-block { width: 100%; margin-top: 8px; }
+.btn:hover, .btn-agendar:hover { background: var(--gold-light); transform: translateY(-2px); }
+.btn-block { display: block; width: 100%; margin-top: 8px; }
 
 .btn-ghost {
-    display: inline-block;
-    padding: 13px 24px;
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    font: 15px Arial, sans-serif;
-    text-decoration: none;
-    text-align: center;
-    cursor: pointer;
+    display: inline-block; padding: 13px 24px;
+    background: transparent; color: var(--text);
+    border: 1px solid var(--line); border-radius: 4px;
+    font: 15px Arial, sans-serif; text-decoration: none; text-align: center; cursor: pointer;
 }
-
 .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
 
 
-/* ========== CABEÇALHO ========== */
-
+/* ===== CABEÇALHO ===== */
 .header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 24px;
+    position: sticky; top: 0; z-index: 100;
+    display: flex; justify-content: space-between; align-items: center; gap: 24px;
     padding: 16px 8%;
-    background: rgba(17,17,17,.95);
-    backdrop-filter: blur(8px);
+    background: rgba(17, 17, 17, .96); backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--line);
 }
-
-.logo { color: var(--gold); text-decoration: none; font-size: 25px; font-weight: bold; }
-
+.logo { color: var(--gold); text-decoration: none; font-size: 25px; font-weight: bold; white-space: nowrap; }
 .logo span { color: var(--text); font-size: 15px; }
 
-.navigation { display: flex; gap: 32px; margin-left: auto; }
-
-.navigation a { color: var(--text); text-decoration: none; font-size: 15px; transition: color .25s; }
-
+.navigation { display: flex; align-items: center; gap: 28px; margin-left: auto; }
+.navigation a { color: var(--text); text-decoration: none; font-size: 14px; transition: color .25s; }
 .navigation a:hover { color: var(--gold); }
 
-.btn-agendar { padding: 12px 22px; }
+.btn-agendar { padding: 12px 22px; white-space: nowrap; }
 
-body.em-agendar .btn-agendar, body.em-agendar .navigation { display: none; }
+.header-whatsapp {
+    width: 42px; height: 42px; flex-shrink: 0;
+    display: flex; justify-content: center; align-items: center;
+    color: var(--gold); border: 1px solid var(--line); border-radius: 50%; text-decoration: none;
+}
+.header-whatsapp:hover { color: var(--bg); background: var(--gold); border-color: var(--gold); }
+
+body.em-agendar .btn-agendar,
+body.em-agendar .navigation { display: none; }
 
 
-/* ========== HERO ========== */
+/* ===== MENU MOBILE ===== */
+.menu-toggle {
+    display: none; width: 44px; height: 44px;
+    background: transparent; border: 1px solid var(--line); border-radius: 6px;
+    align-items: center; justify-content: center; flex-direction: column; gap: 6px; cursor: pointer;
+}
+.menu-toggle span { width: 21px; height: 2px; background: var(--gold); border-radius: 2px; transition: .3s; }
+.menu-toggle.ativo span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+.menu-toggle.ativo span:nth-child(2) { opacity: 0; }
+.menu-toggle.ativo span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+.mobile-agendar { display: none; }
 
+
+/* ===== HERO ===== */
 .hero {
-    min-height: 86vh;
-    display: flex;
-    align-items: center;
-    padding: 80px 8%;
+    min-height: 86vh; display: flex; align-items: center; padding: 80px 8%;
+    /* Para usar sua foto: acrescente  url("img/hero.jpg") center / cover  como última camada */
     background:
         linear-gradient(90deg, rgba(0,0,0,.92), rgba(0,0,0,.45)),
-        radial-gradient(circle at 80% 30%, rgba(201,164,92,.22), transparent 55%), #111;
+        radial-gradient(circle at 80% 30%, rgba(201,164,92,.22), transparent 55%),
+        #111;
 }
-
 .hero-content { max-width: 640px; animation: entrada .8s ease both; }
 
+.hero-subtitulo, .secao-subtitulo {
+    display: block; color: var(--gold);
+    font-size: 12px; font-weight: bold; letter-spacing: 3px; margin-bottom: 16px;
+}
 .hero h1 { font-size: clamp(40px, 6vw, 72px); line-height: 1.1; margin-bottom: 24px; }
-
 .hero p { color: #bbb; font-size: 18px; max-width: 500px; margin-bottom: 32px; }
 
 @keyframes entrada {
     from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 
-/* ========== SOBRE ========== */
-
-.sobre {
-    display: flex;
-    align-items: center;
-    gap: 60px;
-    padding: 100px 10%;
-    background: var(--bg-alt);
-}
-
-.sobre-conteudo { flex: 1; }
-
-.sobre-imagem { flex: 1; }
-
+/* ===== SOBRE ===== */
+.sobre { display: flex; align-items: center; gap: 60px; padding: 100px 10%; background: var(--bg-alt); }
+.sobre-conteudo { flex: 1; min-width: 0; }
+.sobre-imagem { flex: 1; min-width: 0; overflow: hidden; border-radius: 10px; }
 .sobre-conteudo h2 { font-size: clamp(28px, 4vw, 42px); line-height: 1.2; margin-bottom: 20px; }
-
 .sobre-conteudo p { color: #bbb; max-width: 500px; line-height: 1.8; }
-
 .sobre-horario { color: var(--gold) !important; margin: 18px 0 28px; }
+.sobre-imagem img { width: 100%; height: 400px; object-fit: cover; object-position: center; border-radius: 10px; }
 
 
-/* ========== MAPA ========== */
-
+/* ===== LOCALIZAÇÃO E MAPA ===== */
 .mapa { padding: 90px 10%; text-align: center; background: var(--bg); }
-
 .mapa h2 { font-size: clamp(28px, 4vw, 40px); margin-bottom: 10px; }
-
 .mapa address { font-style: normal; color: var(--muted); margin-bottom: 28px; }
-
 .mapa iframe {
     display: block; width: 100%; max-width: 900px; height: 360px; margin: 0 auto 24px;
     border: 1px solid var(--line); border-radius: 10px;
-    filter: invert(90%) hue-rotate(180deg) contrast(.9);   /* mapa escuro. Apague esta linha para o mapa claro */
+    filter: invert(90%) hue-rotate(180deg) contrast(.9);
 }
 
-.footer-insta { display: inline-flex; align-items: center; gap: 8px; color: var(--gold); text-decoration: none; font-size: 14px; }
 
-.footer-insta:hover { color: var(--text); }
+/* ===== CANCELAMENTO ===== */
+.cancelamento { padding: 85px 8%; background: var(--bg-alt); text-align: center; }
+.cancelamento-conteudo { max-width: 550px; margin: 0 auto; }
+.cancelamento h2 { font-size: clamp(27px, 4vw, 38px); line-height: 1.2; margin-bottom: 16px; }
+.cancelamento p { color: var(--muted); margin-bottom: 22px; }
 
-.sobre-imagem img { width: 100%; height: 400px; object-fit: cover; border-radius: 10px; }
-
-
-.footer {
-    display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 24px;
-    padding: 28px 8%; color: #777; font-size: 14px; border-top: 1px solid var(--line);
+#form-cancelamento { text-align: left; }
+#form-cancelamento label, #resultado-cancelamento label {
+    display: block; text-align: left; font-size: 14px; font-weight: bold; margin: 18px 0 8px;
 }
+#form-cancelamento input, #cancel-agendamento {
+    width: 100%; padding: 14px; background: #222; color: var(--text);
+    border: 1px solid #444; border-radius: 8px; font-size: 16px;
+}
+#form-cancelamento input:focus, #cancel-agendamento:focus { outline: none; border-color: var(--gold); }
+
+#resultado-cancelamento {
+    margin-top: 25px; padding: 20px; text-align: left;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+}
+#resultado-cancelamento .btn-ghost { display: block; width: 100%; margin-top: 12px; }
+#erro-cancelamento { color: #ff6b6b; font-size: 14px; margin-top: 14px; }
+
+
+/* ===== RODAPÉ ===== */
+.footer { display: block; padding: 55px 8% 22px; color: #aaa; font-size: 14px; background: #090909; border-top: 1px solid var(--line); }
+
+.footer-conteudo {
+    display: grid; grid-template-columns: 1.2fr 1fr 1fr 1.2fr; gap: 40px;
+    max-width: 1250px; margin: 0 auto;
+}
+.footer-coluna { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.footer-coluna h3 { color: var(--text); font-size: 16px; margin-bottom: 8px; }
+.footer-coluna > a:not(.logo) { color: #999; text-decoration: none; font-size: 14px; }
+.footer-coluna > a:not(.logo):hover { color: var(--gold); }
+.footer-marca .logo { margin-bottom: 8px; }
+.footer-marca p, .footer-parceiros p { color: #888; max-width: 260px; line-height: 1.8; }
+
+.footer-insta { display: inline-flex; align-items: center; gap: 8px; color: var(--gold) !important; text-decoration: none; font-size: 14px; }
+.footer-insta:hover { color: var(--text) !important; }
+.instagram-usuario { color: var(--muted); font-size: 13px; margin-top: -10px; }
+
+.patrocinadores-espaço {
+    width: 100%; min-height: 75px; display: flex; align-items: center; justify-content: center;
+    border: 1px dashed #454545; border-radius: 8px; background: rgba(255,255,255,.02);
+}
+.patrocinadores-espaço span { color: #777; font-size: 11px; font-weight: bold; letter-spacing: 3px; }
+
+.footer-inferior {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+    max-width: 1250px; margin: 45px auto 0; padding-top: 22px;
+    border-top: 1px solid var(--line); color: #777; font-size: 13px;
+}
+.footer-creditos { display: flex; align-items: center; gap: 22px; }
+.footer-creditos strong { color: var(--gold); }
 
 .link-painel { background: none; border: 0; color: #777; font-size: 13px; text-decoration: underline; cursor: pointer; }
-
 .link-painel:hover { color: var(--gold); }
 
 
-/* ========== TELA DE AGENDAMENTO ========== */
-
+/* ===== TELA DE AGENDAMENTO ===== */
 .agendar { max-width: 600px; margin: 0 auto; padding: 28px 20px 70px; min-height: calc(100vh - 70px); }
-
-
 .agendar-topo { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
-
 .agendar-topo h1 { font-size: 22px; }
 
 .voltar {
     padding: 8px 14px; background: transparent; color: var(--text);
     border: 1px solid #444; border-radius: 6px; font-size: 14px; cursor: pointer; white-space: nowrap;
 }
-
 .voltar:hover { border-color: var(--gold); color: var(--gold); }
 
-
 .progresso { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 28px; }
-
 .progresso i { height: 4px; background: var(--line); border-radius: 4px; transition: background .3s; }
 
 
-/* Etapa 1: barbeiros */
-
+/* ===== ETAPA 1 — BARBEIROS ===== */
 .barbeiros { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
 
 .barbeiro-card {
-    display: flex; flex-direction: column; align-items: center; gap: 12px;
-    padding: 24px 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px 12px;
     background: var(--surface); color: var(--text);
-    border: 1px solid var(--line); border-radius: 14px;
-    cursor: pointer; transition: border-color .25s, transform .25s;
+    border: 1px solid var(--line); border-radius: 14px; cursor: pointer;
+    transition: border-color .25s, transform .25s, background .25s, box-shadow .25s;
+    animation: barbeiroEntrada .55s ease both;
+}
+.barbeiro-card:nth-child(2) { animation-delay: .12s; }
+.barbeiro-card:nth-child(3) { animation-delay: .24s; }
+
+@keyframes barbeiroEntrada {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 .barbeiro-card:hover { border-color: var(--gold); transform: translateY(-3px); }
-
+.barbeiro-card.selecionado { border: 2px solid var(--gold); background: rgba(201,164,92,.12); box-shadow: 0 0 18px rgba(201,164,92,.16); }
 .barbeiro-card strong { font-size: 16px; }
-
 .barbeiro-card small { color: var(--muted); font-size: 12px; }
-
+.barbeiro-instagram { color: var(--gold); font-size: 12px; margin-top: 5px; }
 
 .avatar {
     width: 88px; height: 88px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    background: var(--surface-2); color: var(--gold);
-    border: 2px solid var(--gold);
+    background: var(--surface-2); color: var(--gold); border: 2px solid var(--gold);
     font-size: 34px; font-weight: bold; object-fit: cover;
 }
 
 
-/* Etapa 2: serviços */
-
+/* ===== ETAPA 2 — SERVIÇOS ===== */
 .lista-servicos { display: grid; gap: 12px; }
 
 .servico-item {
     display: flex; justify-content: space-between; align-items: center; gap: 16px;
     padding: 18px 20px; text-align: left;
     background: var(--surface); color: var(--text);
-    border: 1px solid var(--line); border-radius: 12px;
-    cursor: pointer; transition: border-color .25s;
+    border: 1px solid var(--line); border-radius: 12px; cursor: pointer;
+    transition: border-color .25s, transform .25s;
 }
-
-.servico-item:hover { border-color: var(--gold); }
-
+.servico-item:hover { border-color: var(--gold); transform: translateY(-2px); }
 .servico-item.destaque { border-color: rgba(201,164,76,.75); background: rgba(201,164,76,.07); }
-
 .servico-item strong { display: block; font-size: 17px; }
-
 .servico-item small { color: var(--muted); font-size: 13px; }
-
 .servico-tag { color: var(--gold-light); font-size: 12px; margin-left: 8px; }
 
 .preco { text-align: right; white-space: nowrap; }
-
 .preco s { display: block; color: #888; font-size: 13px; }
-
 .preco b { color: var(--gold-light); font-size: 22px; }
 
 
-/* Etapa 3: datas e horários */
-
+/* ===== ETAPA 3 — DATAS E HORÁRIOS ===== */
 .datas { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 22px; scrollbar-width: thin; }
 
 .data-chip {
-    flex: 0 0 64px; display: flex; flex-direction: column; align-items: center; gap: 2px;
-    padding: 12px 0; background: var(--surface); color: var(--text);
+    flex: 0 0 64px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 0;
+    background: var(--surface); color: var(--text);
     border: 1px solid var(--line); border-radius: 12px; cursor: pointer; transition: .2s;
 }
-
 .data-chip small { font-size: 12px; color: var(--muted); text-transform: capitalize; }
-
 .data-chip strong { font-size: 22px; }
-
 .data-chip:hover { border-color: var(--gold); }
-
 .data-chip.selecionado { background: var(--gold); border-color: var(--gold); color: var(--bg); }
-
 .data-chip.selecionado small { color: var(--bg); }
-
 
 .horarios-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 
@@ -276,54 +280,296 @@ body.em-agendar .btn-agendar, body.em-agendar .navigation { display: none; }
     padding: 12px 4px; background: #222; color: var(--text);
     border: 1px solid #444; border-radius: 8px; font-size: 15px; cursor: pointer; transition: .2s;
 }
-
 .horario-opcao:hover:not(:disabled) { background: var(--gold); color: var(--bg); border-color: var(--gold); }
-
-.horario-opcao:disabled { opacity: .3; text-decoration: line-through; cursor: not-allowed; }
-
+.horario-opcao:disabled, .horario-opcao.indisponivel {
+    opacity: .38; text-decoration: line-through; cursor: not-allowed; pointer-events: none;
+    background: #222; border-color: #444; color: #999;
+}
 .horario-vazio { grid-column: 1 / -1; color: #999; font-size: 14px; }
 
 
-/* Etapa 4: dados */
-
+/* ===== ETAPA 4 — DADOS DO CLIENTE ===== */
 .resumo { margin-bottom: 24px; padding: 6px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
-
 .res-linha { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
-
 .res-linha:last-child { border-bottom: 0; }
-
 .res-linha span { color: var(--muted); }
-
 .res-linha.total strong { color: var(--gold-light); font-size: 18px; }
 
-#form-dados label, .painel-login label, .painel-filtros label, #painel-login label { display: block; font-weight: bold; font-size: 14px; margin: 18px 0 8px; }
+#form-dados label, #painel-login label, .painel-filtros label { display: block; font-weight: bold; font-size: 14px; margin: 18px 0 8px; }
 
 #form-dados input, #painel-login input, .painel-filtros input, .painel-filtros select {
     width: 100%; padding: 14px; background: #222; color: var(--text);
     border: 1px solid #444; border-radius: 8px; font-size: 16px;
 }
-
-#form-dados input:focus, #painel-login input:focus { outline: none; border-color: var(--gold); }
+#form-dados input:focus, #painel-login input:focus, .painel-filtros input:focus, .painel-filtros select:focus { outline: none; border-color: var(--gold); }
 
 .erro { min-height: 20px; margin-top: 10px; color: #ff6b6b; font-size: 14px; }
 
 
-/* Etapa 5: confirmado */
-
+/* ===== ETAPA 5 — CONFIRMAÇÃO ===== */
 .confirmado { text-align: center; }
-
 .ok-icone {
     width: 64px; height: 64px; margin: 10px auto 14px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     background: var(--gold); color: var(--bg); font-size: 32px; font-weight: bold;
 }
-
 .confirmado h2 { color: var(--gold); margin-bottom: 18px; }
-
-.detalhes { list-style: none; display: grid; gap: 8px; margin: 0 auto 22px; padding: 18px; max-width: 380px; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
-
+.detalhes {
+    list-style: none; display: grid; gap: 8px; margin: 0 auto 22px; padding: 18px; max-width: 380px; text-align: left;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+}
 .detalhes li span { color: var(--muted); }
-
 .aviso { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
-
 .acoes { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+
+
+/* ===== ÁREA DO BARBEIRO ===== */
+.modal {
+    width: min(92%, 550px); max-height: 85vh; margin: auto; padding: 25px; overflow-y: auto;
+    background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 14px;
+}
+.modal::backdrop { background: rgba(0,0,0,.78); backdrop-filter: blur(4px); }
+.painel-topo { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 24px; }
+.painel-topo h3 { font-size: 22px; color: var(--gold); }
+.painel-filtros { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.agenda-resumo { color: var(--gold); margin: 20px 0; font-weight: bold; }
+.agenda-lista { list-style: none; display: grid; gap: 10px; }
+.agenda-lista li { padding: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; }
+
+
+/* ===== TABLETS ===== */
+@media (max-width: 1050px) {
+    .header { padding-left: 5%; padding-right: 5%; gap: 16px; }
+    .navigation { gap: 18px; }
+    .footer-conteudo { grid-template-columns: repeat(2, 1fr); gap: 35px; }
+}
+
+
+/* ===== CELULARES ===== */
+@media (max-width: 760px) {
+    html { scroll-padding-top: 75px; }
+
+    /* header */
+    .header { padding: 12px 5%; gap: 12px; justify-content: space-between; flex-wrap: nowrap; }
+    .logo { font-size: 23px; }
+    .logo span { font-size: 13px; }
+    .header-whatsapp { width: 39px; height: 39px; margin-left: auto; }
+    .menu-toggle { display: flex; flex-shrink: 0; }
+    .header > .btn-agendar { display: none; }
+
+    /* menu */
+    .navigation {
+        display: none; position: absolute; top: 100%; left: 0; width: 100%; margin: 0; padding: 18px 6% 24px;
+        background: #111; border-bottom: 1px solid var(--line);
+        flex-direction: column; align-items: stretch; gap: 0; box-shadow: 0 12px 20px rgba(0,0,0,.35);
+    }
+    .navigation.aberto { display: flex; }
+    .navigation a { padding: 14px 8px; font-size: 16px; border-bottom: 1px solid var(--line); }
+    .navigation a:last-child { border-bottom: none; }
+    .navigation .mobile-agendar {
+        display: block; margin-top: 12px; padding: 14px; text-align: center;
+        background: var(--gold); color: #111; font-weight: bold; border-radius: 5px;
+    }
+    .navigation .mobile-agendar:hover { color: #111; background: var(--gold-light); }
+    body.em-agendar .menu-toggle { display: none; }
+
+    /* hero */
+    .hero {
+        min-height: 78vh; padding: 65px 7%;
+        background:
+            linear-gradient(90deg, rgba(0,0,0,.94), rgba(0,0,0,.55)),
+            radial-gradient(circle at 80% 30%, rgba(201,164,92,.18), transparent 55%),
+            #111;
+    }
+    .hero h1 { font-size: clamp(38px, 11vw, 54px); }
+    .hero p { font-size: 16px; }
+    .hero .btn { width: 100%; }
+
+    /* sobre */
+    .sobre { display: flex; flex-direction: column; align-items: stretch; gap: 28px; padding: 65px 6%; }
+    .sobre-imagem { order: -1; width: 100%; aspect-ratio: 16 / 10; border-radius: 12px; }
+    .sobre-imagem img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+    .sobre-conteudo { width: 100%; }
+    .sobre-conteudo h2 { font-size: 32px; margin-bottom: 18px; }
+    .sobre-conteudo p { font-size: 15px; line-height: 1.8; }
+    .sobre-conteudo .btn { display: block; width: 100%; margin-top: 24px; }
+
+    /* mapa, cancelamento, rodapé */
+    .mapa { padding: 65px 6%; }
+    .mapa iframe { height: 300px; }
+    .mapa .btn-ghost { width: 100%; }
+    .cancelamento { padding: 65px 6%; }
+    .footer { padding: 45px 6% 20px; }
+    .footer-conteudo { grid-template-columns: 1fr 1fr; gap: 35px 20px; }
+    .footer-inferior { flex-direction: column; align-items: flex-start; margin-top: 35px; }
+    .footer-creditos { width: 100%; justify-content: space-between; flex-wrap: wrap; }
+
+    /* agendamento */
+    .agendar { padding: 25px 16px 55px; }
+    .agendar-topo h1 { font-size: 19px; }
+    .barbeiros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .barbeiro-card { padding: 20px 10px; }
+    .avatar { width: 76px; height: 76px; font-size: 29px; }
+    .horarios-container { grid-template-columns: repeat(3, 1fr); }
+    .servico-item { padding: 15px; }
+    .preco b { font-size: 19px; }
+    .painel-filtros { grid-template-columns: 1fr; }
+}
+
+
+/* ===== CELULARES PEQUENOS ===== */
+@media (max-width: 400px) {
+    .header { gap: 8px; }
+    .logo { font-size: 20px; }
+    .logo span { font-size: 11px; }
+    .header-whatsapp { width: 36px; height: 36px; }
+    .menu-toggle { width: 40px; height: 40px; }
+    .barbeiros { grid-template-columns: 1fr 1fr; gap: 9px; }
+    .barbeiro-card { padding: 16px 6px; }
+    .horarios-container { grid-template-columns: repeat(2, 1fr); }
+    .footer-conteudo { grid-template-columns: 1fr; }
+    .agendar-topo { gap: 8px; }
+    .agendar-topo h1 { font-size: 17px; }
+}
+
+
+/* ===== ACESSIBILIDADE — REDUZIR ANIMAÇÕES ===== */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
+
+
+/* =========================================
+   MELHORIAS — celular e animações
+   (mesma paleta preta e dourada)
+========================================= */
+
+/* ---------- Toque (celular) ---------- */
+button, a, .barbeiro-card, .servico-item, .data-chip, .horario-opcao {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+.btn:active, .btn-agendar:active, .btn-ghost:active, .barbeiro-card:active,
+.servico-item:active, .data-chip:active, .horario-opcao:active, .voltar:active {
+    transform: scale(.96);
+}
+
+/* ---------- Hero com mais vida ---------- */
+.hero { position: relative; overflow: hidden; }
+.hero-content { position: relative; z-index: 1; }
+.hero::before {
+    content: "";
+    position: absolute;
+    top: -80px; right: -120px;
+    width: 440px; height: 440px;
+    background: radial-gradient(circle, rgba(201,164,92,.30), transparent 65%);
+    animation: pulso 6s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes pulso { 50% { transform: scale(1.25); opacity: .55; } }
+
+.hero .btn { position: relative; overflow: hidden; }
+.hero .btn::after {
+    content: "";
+    position: absolute; top: 0; left: -120%;
+    width: 60%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.45), transparent);
+    animation: brilho 4s ease-in-out infinite;
+}
+@keyframes brilho { 0%, 60% { left: -120%; } 100% { left: 160%; } }
+
+.hero-chips { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 28px; }
+.hero-chips li {
+    padding: 7px 14px;
+    font-size: 13px;
+    color: var(--gold-light);
+    background: rgba(201,164,92,.10);
+    border: 1px solid rgba(201,164,92,.35);
+    border-radius: 30px;
+}
+
+/* ---------- Entrada suave ao rolar ---------- */
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+.reveal.visivel { opacity: 1; transform: none; }
+
+/* ---------- Botão fixo "Agendar horário" (só no celular) ---------- */
+.cta-fixo { display: none; }
+
+@media (max-width: 760px) {
+    .cta-fixo {
+        display: block;
+        position: fixed;
+        left: 16px; right: 16px;
+        bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+        z-index: 90;
+        padding: 16px;
+        background: var(--gold);
+        color: var(--bg);
+        text-align: center;
+        font-weight: bold;
+        text-decoration: none;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.55);
+        transform: translateY(140%);
+        opacity: 0;
+        pointer-events: none;
+        transition: transform .35s ease, opacity .35s ease;
+    }
+    .cta-fixo.visivel { transform: none; opacity: 1; pointer-events: auto; }
+
+    .navigation.aberto { animation: menuEntra .25s ease; }
+    .barbeiro-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+@keyframes menuEntra { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Agendamento ---------- */
+.escolhas { margin: -12px 0 22px; color: var(--gold); font-size: 14px; font-weight: bold; }
+
+.datas { scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.data-chip { scroll-snap-align: start; }
+.data-chip small:first-child { text-transform: capitalize; }
+
+.periodo {
+    grid-column: 1 / -1;
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+.periodo:first-child { margin-top: 0; }
+
+/* ---------- Confirmação com animação ---------- */
+.ok-icone { animation: pop .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+.detalhes li { animation: subir .4s ease both; }
+.detalhes li:nth-child(2) { animation-delay: .08s; }
+.detalhes li:nth-child(3) { animation-delay: .16s; }
+.detalhes li:nth-child(4) { animation-delay: .24s; }
+.detalhes li:nth-child(5) { animation-delay: .32s; }
+.detalhes li:nth-child(6) { animation-delay: .40s; }
+@keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes subir { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Área do barbeiro ---------- */
+.agenda-lista .painel-zap { padding: 9px 14px; font-size: 13px; margin: 12px 8px 0 0; }
+
+/* o botão de cancelar usa a classe .btn (dourado): aqui vira vermelho */
+.agenda-lista .cancelar-reserva-painel {
+    margin-top: 12px;
+    padding: 9px 14px;
+    background: transparent;
+    color: #ff7777;
+    border: 1px solid #a94444;
+    font-size: 13px;
+}
+.agenda-lista .cancelar-reserva-painel:hover { background: #a94444; color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+    .hero::before, .hero .btn::after, .ok-icone, .detalhes li { animation: none !important; }
+    .reveal { opacity: 1; transform: none; }
+}
